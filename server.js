@@ -26,7 +26,10 @@ app.get('/allQA', function (req, res) {
 		where.known = false;
 	}
 
+		console.log('In the allQA API');
+
 	if (query.hasOwnProperty('q') && query.q.length > 0) {
+		console.log('In the allQA API q If statement');
 		where.question = {
 			$like: '%' + query.q + '%'
 		};

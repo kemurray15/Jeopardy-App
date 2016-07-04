@@ -120,7 +120,7 @@ app.put('/todos/:id', function (req, res) {
 	res.json(matchedQA);
 });
 
-app.delete('QA/:id', function (req, res) {
+app.delete('/QA/:id', function (req, res) {
 	var QAID = parseInt(req.params.id, 10);
 
 	db.qa.destroy({

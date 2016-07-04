@@ -115,6 +115,7 @@ app.put('/todos/:id', function (req, res) {
 
 db.sequelize.sync().then(function () {
 	app.listen(PORT, function() {
+		console.log(PORT);
 		console.log('Jeopardy Server up and running');
 	});
 });

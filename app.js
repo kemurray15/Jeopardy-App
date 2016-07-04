@@ -16,8 +16,33 @@ app.get('/' , function (req,res) {
     res.sendfile('public/index.html');
 });
 
-app.get('/Login', function (req, res) {
+app.get('/allQA', function (req, res) {
+	var query = req.query;
+	var where = {};
 
+	if (query.hasOwnProperty('known') && query.known === 'true') {
+		where.known = true;
+	} else if (query.hasOwnProperty('known') && query.known === 'false') {
+		where.known = false;
+	}
+
+	if (query.hasOwnProperty('q') && query.q.length > 0) {
+		where.question = {
+			$like: '%' + query.q + '%'
+		};
+	}
+
+	if (query.hasOwnProperty('a') && query.a.length > 0) {
+		where.answer = {
+			$like: '%' + query.a + '%'
+		};
+	}
+
+	db.qa.findAll({where: where}).then(function (qas) {
+		res.json(qas);
+	}, function (e) {
+		res.status(500).send();
+	})
 });
 
 app.get('/QA/:id', function (req, res) {
@@ -26,8 +51,10 @@ app.get('/QA/:id', function (req, res) {
 		if (qa) {
 			res.json(qa.toJSON());
 		} else {
-			console.log('Could not find ID' + qaID);
+			res.status(404).send();
 		}
+	}, function (e) {
+		res.status(500).send();
 	});
 });
 

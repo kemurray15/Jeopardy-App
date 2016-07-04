@@ -130,7 +130,7 @@ app.delete('/QA/:id', function (req, res) {
 	}).then(function (rowsDeleted) {
 		if (rowsDeleted === 0) {
 			res.status(404).json({
-				error: "No QA found with that id";
+				error: "No QA found with that id"
 			});
 		} else {
 			res.status(204).send();

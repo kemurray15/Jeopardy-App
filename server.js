@@ -1,7 +1,7 @@
 var express = require('express');
 var app = express();
 var db = require('./db.js');
-var PORT = process.env.port || 3000;
+var PORT = process.env.PORT || 3000;
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var QAS = [];

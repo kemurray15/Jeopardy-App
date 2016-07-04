@@ -30,6 +30,10 @@ app.get('/allQA', function (req, res) {
 
 	if (query.hasOwnProperty('q') && query.q.length > 0) {
 		console.log('In the allQA API q If statement');
+		//if this code is being applied to a SQLite browser
+		//then it appears to be case insensitive, but
+		//when used for postgres there appear to be case
+		//sensitive searches
 		where.question = {
 			$like: '%' + query.q + '%'
 		};
@@ -114,6 +118,26 @@ app.put('/todos/:id', function (req, res) {
 	_.extend(matchedQA, validAttributes);
 
 	res.json(matchedQA);
+});
+
+app.delete('QA/:id', function (req, res) {
+	var QAID = parseInt(req.params.id, 10);
+
+	db.qa.destroy({
+		where: {
+			id: QAID
+		}
+	}).then(function (rowsDeleted) {
+		if (rowsDeleted === 0) {
+			res.status(404).json({
+				error: "No QA found with that id";
+			});
+		} else {
+			res.status(204).send();
+		}
+	}, function() {
+		res.status(500).send();
+	});
 });
 
 db.sequelize.sync().then(function () {

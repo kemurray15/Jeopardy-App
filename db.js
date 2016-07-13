@@ -16,6 +16,7 @@ if (env === process.env.NODE_ENV) {
 var db = {};
 
 db.qa = sequelize.import(__dirname + '/models/qa.js');
+db.user = sequelize.import(__dirname + '/models/user.js');
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 

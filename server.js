@@ -87,37 +87,37 @@ app.post('/addQA', function (req, res) {
 	// res.json(body);
 });    
 
-app.put('/todos/:id', function (req, res) {
+app.put('/QA/:id', function (req, res) {
 	var body = _.pick(req.body, 'question', 'answer', 'known');
 	var validAttributes = {};
 	var QAId = parseInt(req.params.id, 10);
-	var matchedQA = _.findWhere(QAS, {id: QAId});
+	
 
-	if (!matchedQA) {
-		res.status(404).send();
-	}
-
-	if (body.hasOwnProperty('known') && _.isBoolean(body.known)) {
+	if (body.hasOwnProperty('known')) {
 		validAttributes.known = body.known;
-	} else if (body.hasOwnProperty('known')) {
-		res.status(400).send();
 	} 
 
-	if (body.hasOwnProperty('question') && _.isString(body.question) && body.question.trim().length>0) {
+	if (body.hasOwnProperty('question')) {
 		validAttributes.question = body.question;
-	} else if (body.hasOwnProperty('question')) {
-		res.status(400).send();
 	} 
 
-	if (body.hasOwnProperty('answer') && _.isString(body.answer) && body.answer.trim().length>0) {
+	if (body.hasOwnProperty('answer')) {
 		validAttributes.answer = body.answer;
-	} else if (body.hasOwnProperty('answer')) {
-		res.status(400).send();
 	} 
 
-	_.extend(matchedQA, validAttributes);
-
-	res.json(matchedQA);
+	db.qa.findbyId(QAId).then(function (qa) {
+		if(qa) {
+			qa.update(validAttributes).then(function(qa) {
+				res.json(qa.toJSON());
+			}, function (e) {
+				res.status(400).json(e);
+			});
+		} else {
+			res.status(404).send();
+		}		
+	}, function () {
+		res.status(500).send();
+	});
 });
 
 app.delete('/QA/:id', function (req, res) {
@@ -137,6 +137,16 @@ app.delete('/QA/:id', function (req, res) {
 		}
 	}, function() {
 		res.status(500).send();
+	});
+});
+
+app.post('/users', function (req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	db.user.create(body).then(function (user) {
+		res.status(200).json(user.toJSON())
+	}, function (e) {
+		res.status(404).json(e);
 	});
 });
 

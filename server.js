@@ -4,6 +4,8 @@ var db = require('./db.js');
 var PORT = process.env.PORT || 3000;
 var bodyParser = require('body-parser');
 var _ = require('underscore');
+var middleware = require('./middleware.js')(db);
+var bcrypt = require('bcryptjs');
 var QAS = [];
 var QASNextId = 1;
 
@@ -16,9 +18,11 @@ app.get('/' , function (req,res) {
     res.sendfile('public/index.html');
 });
 
-app.get('/allQA', function (req, res) {
+app.get('/allQA', middleware.requireAuthentication, function (req, res) {
 	var query = req.query;
-	var where = {};
+	var where = {
+		userId: req.user.get('id')
+	};
 
 	if (query.hasOwnProperty('known') && query.known === 'true') {
 		where.known = true;
@@ -52,9 +56,15 @@ app.get('/allQA', function (req, res) {
 	})
 });
 
-app.get('/QA/:id', function (req, res) {
-	var qaID = parseInt(req.params.id, 10);
-	db.qa.findById(qaID).then(function(qa) {
+app.get('/QA/:id', middleware.requireAuthentication, function (req, res) {
+	var qaId = parseInt(req.params.id, 10);
+	
+	db.qa.findOne({
+		where: {
+			id: qaId,
+			userId: req.user.get('id')
+		}
+	}).then(function(qa) {
 		if (qa) {
 			res.json(qa.toJSON());
 		} else {
@@ -65,11 +75,17 @@ app.get('/QA/:id', function (req, res) {
 	});
 });
 
-app.post('/addQA', function (req, res) {
+
+app.post('/addQA', middleware.requireAuthentication, function (req, res) {
 	var body = _.pick(req.body, 'question', 'answer', 'known');
 
 	db.qa.create(body).then(function (qa) {
-		res.status(200).json(qa.toJSON())
+		
+		req.user.addQa(qa).then(function () {
+			return qa.reload();
+		}).then(function (qa) {
+			res.json(qa.toJSON());
+		});
 	}, function (e) {
 		res.status(404).json(e);
 	});
@@ -87,10 +103,10 @@ app.post('/addQA', function (req, res) {
 	// res.json(body);
 });    
 
-app.put('/QA/:id', function (req, res) {
+app.put('/QA/:id', middleware.requireAuthentication, function (req, res) {
 	var body = _.pick(req.body, 'question', 'answer', 'known');
 	var validAttributes = {};
-	var QAId = parseInt(req.params.id, 10);
+	var qaId = parseInt(req.params.id, 10);
 	
 
 	if (body.hasOwnProperty('known')) {
@@ -105,7 +121,12 @@ app.put('/QA/:id', function (req, res) {
 		validAttributes.answer = body.answer;
 	} 
 
-	db.qa.findbyId(QAId).then(function (qa) {
+	db.qa.findOne({
+		where: {
+			id: qaId,
+			userId: req.user.get('id')
+		}
+	}).then(function (qa) {
 		if(qa) {
 			qa.update(validAttributes).then(function(qa) {
 				res.json(qa.toJSON());
@@ -120,12 +141,13 @@ app.put('/QA/:id', function (req, res) {
 	});
 });
 
-app.delete('/QA/:id', function (req, res) {
-	var QAID = parseInt(req.params.id, 10);
+app.delete('/QA/:id', middleware.requireAuthentication, function (req, res) {
+	var qaId = parseInt(req.params.id, 10);
 
 	db.qa.destroy({
 		where: {
-			id: QAID
+			id: qaId,
+			userId: req.user.get('id')
 		}
 	}).then(function (rowsDeleted) {
 		if (rowsDeleted === 0) {
@@ -144,13 +166,31 @@ app.post('/users', function (req, res) {
 	var body = _.pick(req.body, 'email', 'password');
 
 	db.user.create(body).then(function (user) {
-		res.status(200).json(user.toJSON())
+		res.status(200).json(user.toPublicJSON())
 	}, function (e) {
 		res.status(404).json(e);
 	});
 });
 
-db.sequelize.sync().then(function () {
+app.post('/users/login', function (req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+
+
+	db.user.authenticate(body).then(function (user) {
+		var token = user.generateToken('authentication');
+
+		if (token) {	
+			res.header('Auth', token).json(user.toPublicJSON());
+		} else {
+			res.status(401).send();
+		}
+	}, function () {
+		res.status(401).send();
+	});
+});
+
+db.sequelize.sync({force: true}).then(function () {
 	app.listen(PORT, function() {
 		console.log(PORT);
 		console.log('Jeopardy Server up and running');

@@ -29,19 +29,40 @@ var QA = sequelize.define('qa', {
 });
 
 //step 3 enter data
+var User = sequelize.define('user', {
+	email: Sequelize.STRING
+});
+
+QA.belongsTo(User);
+User.hasMany(QA);
 
 sequelize.sync({
-	force: true //I think if you force this sync then it's possible that when this program runs it would delete all existing data in the sqlitebrowser database? Yes, something about the force 
-	//deletes the existing data.  So by not forcing the below search will work because it will allow the existing data in the database to persist.
+	//force: true 
 }).then(function () {
 	console.log('Everything is synced');
-	
-	QA.findById(1).then(function (qa) {
-		if (qa) {
-			console.log(qa.toJSON());
-		} else {
-			console.log('No QA found!');
-		}
+
+
+	User.create({
+		email: 'kmur15@gmail.com'
+	}).then(function () {
+		return QA.create({
+			question: "what is the capital of Bangladesh?",
+			answer: "Dakar",
+			known: true
+		});
+	}).then(function (qa) {
+		User.findById(1).then(function (user) {
+			//user.addQa(qa); //you actually need use the instance variable here but capitalize the first letter after add so "Qa" in this case.""
+			user.getQas({
+				where: {
+					known: false
+				}
+			}).then(function (qas) {
+				qas.forEach(function (qa) {
+					console.log(qa.toJSON());
+				});
+			});
+		});
 	});
 
 	// QA.create({

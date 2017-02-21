@@ -15,7 +15,7 @@ var QASNextId = 1;
 app.use(bodyParser.json());
 
 app.get('/' , function (req,res) {
-    res.sendfile('public/index.html');
+    res.sendfile('index.html');
 });
 
 app.get('/allQA', middleware.requireAuthentication, function (req, res) {
@@ -102,6 +102,35 @@ app.post('/addQA', middleware.requireAuthentication, function (req, res) {
 	// QASNextId++;
 	// res.json(body);
 });    
+
+app.post('/autoRenew', function (req, res) {
+	//var body = _.pick(req.body, 'memberList');
+	var body = req.body;
+	var memberList = body.memberList;
+	var resObj = [];
+
+	memberList.forEach(function(member) {
+		var singleMember = {};
+		var int = Math.floor((Math.random() * 10) + 1);
+		console.log(int);
+		if (int === 9) {
+			singleMember['status'] = 'fail';
+		} else {
+			singleMember['status'] = 'success';
+		}
+	 	singleMember['memberID'] = member.memberID;
+	 	singleMember['ARP'] = member.ARP;
+	 	resObj.push(singleMember);
+	});
+
+	res.json(resObj);
+
+	
+	
+		
+});
+
+
 
 app.put('/QA/:id', middleware.requireAuthentication, function (req, res) {
 	var body = _.pick(req.body, 'question', 'answer', 'known');
@@ -190,7 +219,7 @@ app.post('/users/login', function (req, res) {
 	});
 });
 
-db.sequelize.sync({force: true}).then(function () {
+db.sequelize.sync({force: false}).then(function () {
 	app.listen(PORT, function() {
 		console.log(PORT);
 		console.log('Jeopardy Server up and running');
